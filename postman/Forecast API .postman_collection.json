@@ -1,0 +1,140 @@
+{
+	"info": {
+		"_postman_id": "b663ee19-905a-4e9b-a9f3-46a707f48987",
+		"name": "Forecast API ",
+		"description": "Forecast API collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get forecast metrics | OK",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "07db5095-fb8a-476e-bd2d-0fd0b3f7d5c7",
+						"type": "text/javascript",
+						"exec": [
+							"// Define the JSON Schema",
+							"const forecastSchema = {",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"city\": {",
+							"      \"type\": \"string\",",
+							"      \"minLength\": 1",
+							"    },",
+							"    \"metrics\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"averageDailyTemperature\": { \"type\": \"number\" },",
+							"        \"averageNightlyTemperature\": { \"type\": \"number\" },",
+							"        \"averagePressure\": { \"type\": \"number\" }",
+							"      }",
+							"    }",
+							"  },",
+							"  \"required\": [\"city\", \"metrics\"]",
+							"};",
+							"",
+							"",
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"// Test whether the response matches the schema",
+							"var forecast = JSON.parse(responseBody);",
+							"tests[\"Forecast JSON object is valid\"] = tv4.validate(forecast, forecastSchema);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{endpoint}}/weather/data?city={{city}}",
+					"host": [
+						"{{endpoint}}"
+					],
+					"path": [
+						"weather",
+						"data"
+					],
+					"query": [
+						{
+							"key": "city",
+							"value": "{{city}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get forecast metrics | Validation error",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "8bd76f80-3441-4b03-bf81-9d4296062780",
+						"type": "text/javascript",
+						"exec": [
+							"// Define the JSON Schema",
+							"const errorSchema = {",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"error\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"code\": { \"type\": \"string\" },",
+							"        \"message\": { \"type\": \"string\" }",
+							"      },",
+							"      \"required\": [\"code\", \"message\"]",
+							"      ",
+							"    }",
+							"  },",
+							"  \"required\": [\"error\"]",
+							"};",
+							"",
+							"",
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"// Test whether the response matches the schema",
+							"var error = JSON.parse(responseBody);",
+							"tests[\"Error JSON object is valid\"] = tv4.validate(error, errorSchema);",
+							"",
+							"pm.test(\"Error code is E:W:VALIDATION\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error.code).to.eql(\"E:W:VALIDATION\");",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{endpoint}}/weather/data?city=",
+					"host": [
+						"{{endpoint}}"
+					],
+					"path": [
+						"weather",
+						"data"
+					],
+					"query": [
+						{
+							"key": "city",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
