@@ -7,16 +7,18 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.myself.weather.Config;
+import com.myself.weather.Utils;
+import com.myself.weather.bean.Forecast;
+import com.myself.weather.bean.Forecast.Metrics;
 import com.myself.weather.connector.OpenWeatherApiConnector;
-import com.myself.weather.dto.Forecast;
-import com.myself.weather.dto.Forecast.Metrics;
 import com.myself.weather.service.IWeatherService;
-import com.myself.weather.utils.DateUtils;
 
 /**
  * Weather service implementation. It depends on OpenWeather connector and 
@@ -30,7 +32,7 @@ import com.myself.weather.utils.DateUtils;
 public class WeatherService implements IWeatherService {
 
 	private static final String CONFIG_PREFIX = "weatherService.";
-
+	
 	@Autowired
 	private Environment env;
 
@@ -43,7 +45,10 @@ public class WeatherService implements IWeatherService {
 
 	
 	@Override
-	public Forecast fetchWeatherStatisticsByCity(String city) {
+	@Cacheable(Config.CACHE_NAME)
+	public Forecast fetchWeatherForecastByCity(String city) {
+		logger.info("Cache missed for {} forecast", city);
+
 		JsonNode owRawResult = openWeatherApiConnector.fetch("/forecast?q={city}", city);
 
 		ObjectMapper mapper = new ObjectMapper();
@@ -52,20 +57,20 @@ public class WeatherService implements IWeatherService {
 		long forecastBoundaryDtEpochMillis = getForecastBoundaryDtEpochMillis();
 
 		List<JsonNode> forecastFilteredList = forecastList.stream()
-				.filter(f -> isForecastInTarget(parseForecastDatetimeToEpochMillis(f), forecastBoundaryDtEpochMillis))
+				.filter(f -> isForecastInTarget(getForecastDatetimeInEpochMillis(f), forecastBoundaryDtEpochMillis))
 				.collect(Collectors.toList());
 
 		double averagePressure = forecastFilteredList.stream()
 				.mapToDouble(f -> f.get("main").get("pressure").asDouble()).average().orElse(0);
 
 		double averageDailyTemperature = forecastFilteredList.stream()
-				.filter(f -> isDailyForecast(parseForecastDatetimeToEpochMillis(f)))
+				.filter(f -> isDailyForecast(getForecastDatetimeInEpochMillis(f)))
 				.mapToDouble(f -> f.get("main").get("temp").asDouble()).average().orElse(0);
 
 		// this could be more efficient, given that if !dailyRecord then means is nightly.
 		// I could use the previous stream iteration to get nightly records, but I preferred to reuse streams for readability purposes.
 		double averageNightlyTemperature = forecastFilteredList.stream()
-				.filter(f-> !isDailyForecast(parseForecastDatetimeToEpochMillis(f)))
+				.filter(f-> !isDailyForecast(getForecastDatetimeInEpochMillis(f)))
 				.mapToDouble(f -> f.get("main").get("temp").asDouble()).average().orElse(0);
 
 		Forecast forecast = new Forecast();
@@ -85,7 +90,7 @@ public class WeatherService implements IWeatherService {
 	 * @param forecastItem json object coming from OpenWeather api
 	 * @return datetime of the given forecast in Unix epoch time
 	 */
-	private long parseForecastDatetimeToEpochMillis(JsonNode forecastItem) {
+	private long getForecastDatetimeInEpochMillis(JsonNode forecastItem) {
 		return 1000 * forecastItem.get("dt").asLong();
 	}
 
@@ -96,7 +101,7 @@ public class WeatherService implements IWeatherService {
 	 * @return the configured forecast boundary in Unix epoch time. 
 	 */
 	private long getForecastBoundaryDtEpochMillis() {
-		return DateUtils.nowToEpochMillis()
+		return Utils.nowToEpochMillis()
 				+ (1000 * 60 * 60 * 24 * env.getProperty(CONFIG_PREFIX + "forecastBoundaryInDays", long.class));
 	}
 
@@ -112,7 +117,7 @@ public class WeatherService implements IWeatherService {
 	private boolean isForecastInTarget(long forecastDtEpochMillis, long forecastBoundaryDtEpochMillis) {
 		boolean inTarget = forecastDtEpochMillis <= forecastBoundaryDtEpochMillis;
 		if (!inTarget)
-			logger.info("Dropped forecast with dt={}", forecastDtEpochMillis);
+			logger.debug("Dropped forecast with dt={}", forecastDtEpochMillis);
 		return inTarget;
 	}
 
@@ -123,15 +128,15 @@ public class WeatherService implements IWeatherService {
 	 * from a properties file contained in the project. Considering the 
 	 * application requirements I made the following assumptions: 
 	 * 	- all datetime checks leverage on UTC timezone
-	 * 	- condition to be part of the inverval is interval.start < datetime <= interval.end
-	 * @param forecastDtEpochMillis datetine in Unix epoch time 
+	 * 	- condition to be part of the interval is interval.start < datetime <= interval.end
+	 * @param forecastDtEpochMillis datetime in Unix epoch time 
 	 * @return a boolean indicating if the given value is considered a daily forecast 
 	 */
 	private boolean isDailyForecast(long forecastDtEpochMillis) {
-		int hour = DateUtils.getHour(forecastDtEpochMillis);
+		int hour = Utils.getHour(forecastDtEpochMillis);
 		String[] dailyInterval = env.getProperty(CONFIG_PREFIX + "dailyInterval", "6-18").split("-");
 		boolean daily = hour > Integer.valueOf(dailyInterval[0]) && hour <= Integer.valueOf(dailyInterval[1]);
-		logger.info("Forecast with dt={} -> daily={}", forecastDtEpochMillis, daily);
+		logger.debug("Forecast with dt={} -> daily={}", forecastDtEpochMillis, daily);
 		return daily;
 	}
 

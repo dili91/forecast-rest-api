@@ -1,4 +1,6 @@
-package com.myself.weather;
+package com.myself.weather.bean;
+
+import javax.validation.constraints.NotNull;
 
 /**
  * Bean for custom REST errors. This is used by application custom error handler
@@ -7,6 +9,7 @@ package com.myself.weather;
  *
  */
 public class RestErrorWrapper {
+	@NotNull
 	private Error error;
 	
 	public RestErrorWrapper(String code, String message) {
@@ -18,7 +21,9 @@ public class RestErrorWrapper {
 	}
 
 	class Error {
+		@NotNull
 		private String code;
+		@NotNull
 		private String message;
 
 		public Error(String code, String message) {

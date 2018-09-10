@@ -1,4 +1,6 @@
-package com.myself.weather.dto;
+package com.myself.weather.bean;
+
+import javax.validation.constraints.NotNull;
 
 /**
  * DTO to be returned to clients.
@@ -7,7 +9,10 @@ package com.myself.weather.dto;
  *
  */
 public class Forecast {
+	
+	@NotNull
 	private String city;
+	@NotNull
 	private Metrics metrics;
 
 	public String getCity() {

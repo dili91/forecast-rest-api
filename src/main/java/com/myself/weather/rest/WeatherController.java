@@ -1,4 +1,4 @@
-package com.myself.weather.controller;
+package com.myself.weather.rest;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.myself.weather.RestErrorWrapper;
-import com.myself.weather.dto.Forecast;
-import com.myself.weather.service.impl.WeatherService;
+import com.myself.weather.bean.Forecast;
+import com.myself.weather.bean.RestErrorWrapper;
+import com.myself.weather.service.IWeatherService;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -33,16 +33,16 @@ public class WeatherController {
 
 	/* Holds weather service instance */
 	@Autowired
-	private WeatherService weatherService;
+	private IWeatherService weatherService;
 
 	@RequestMapping(method = RequestMethod.GET, path = "/data", produces = "application/json")
-	@ApiOperation("Fetch the average weather statistics for the given city")
+	@ApiOperation("Fetch the average pressure, daily and nightly temperature in Celsius for the given city for the following 3 days")
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Ok", response = Forecast.class),
 			@ApiResponse(code = 400, message = "Validation error", response = RestErrorWrapper.class),
 			@ApiResponse(code = 404, message = "City not found", response = RestErrorWrapper.class),
 			@ApiResponse(code = 500, message = "Generic error", response = RestErrorWrapper.class) })
 	public Forecast fetchAverageTemperatureByCity(
 			@RequestParam(value = "city", required = true) @NotEmpty @Pattern(regexp = "^[a-zA-Z, ]*$") String city) {
-		return weatherService.fetchWeatherStatisticsByCity(city);
+		return weatherService.fetchWeatherForecastByCity(city);
 	}
 }

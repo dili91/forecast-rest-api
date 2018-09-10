@@ -1,9 +1,8 @@
-package com.myself.weather.utils;
+package com.myself.weather;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.TimeZone;
 
 /**
@@ -11,7 +10,7 @@ import java.util.TimeZone;
  * @author andreadilisio
  *
  */
-public class DateUtils {
+public class Utils {
 
 	/**
 	 * Get current date in Unix epoch time
@@ -22,14 +21,14 @@ public class DateUtils {
 	}
 
 	/**
-	 * Return the given Unix epoch timestamp in a Date object with UTC timezone
-	 * @param ts unix epoch time in seconds
+	 * Return the corresponding hour to the given epoch time in milliseconds (0h-23h)
+	 * @param ts unix epoch time in millisecond
 	 * @return the corresponding hour of the day
 	 */
 	public static int getHour(long ts) {
 		Calendar c = Calendar.getInstance();
 		c.setTimeZone(TimeZone.getTimeZone("UTC"));
-		c.setTime(new Date((long) ts));
+		c.setTimeInMillis(ts);
 		return c.get(Calendar.HOUR_OF_DAY);
 	}
 }

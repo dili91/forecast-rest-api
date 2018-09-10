@@ -1,6 +1,6 @@
 package com.myself.weather.service;
 
-import com.myself.weather.dto.Forecast;
+import com.myself.weather.bean.Forecast;
 
 /**
  * Interface describing Weather Service features
@@ -14,5 +14,5 @@ public interface IWeatherService {
 	 * @param city required value
 	 * @return an object containing average data as per application requirement 
 	 */
-	Forecast fetchWeatherStatisticsByCity(String city);
+	Forecast fetchWeatherForecastByCity(String city);
 }
